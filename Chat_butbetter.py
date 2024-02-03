@@ -294,7 +294,6 @@ def main(page: ft.Page):
         page.update()
 
     def open_translator(e):
-        print(e)
         shortcut_open_translator()
 
     def reset_translator(e):
@@ -357,75 +356,101 @@ def main(page: ft.Page):
                                           ],
                                 on_dismiss = open_translator,
                                 open = True)
-        
-    def shortcut_drawer_changed():
-        index = page.drawer.selected_index
-        if index != 0: # Because of some error with flet
-            index += 1
-        label = page.drawer.controls[index].label
-
-        if label in trans_channel_names:
-            if chat_container not in page.controls:
-                page.add(chat_container, message_sender)
-            channel.name = channel_names[trans_channel_names.index(label)]
-            page.appbar.title.value = label
-            unload_messages()
-            load_messages()
-            new_message.focus()
-        
-        if label == s_translate("Feedback"):
-            if chat_container not in page.controls:
-                page.add(chat_container, message_sender)
-            channel.name = "Feedback"
-            page.appbar.title.value = label
             
+    def change_all_topics():
+        page.dialog = all_topics
+        page.dialog.open = topics.data = not topics.data
+        page.update()
+
+    def change_channel(label):
+        page.drawer.open = False
+    
+        if label == "Feedback":
+            channel.name = label
+        else:
+            channel.name = channel_names[trans_channel_names.index(label)]
+            change_all_topics()
+        if page.session.get("channel") != label:
+            
+            page.appbar.title.value = label
+            channel_name.content.value = label
+            page.session.set("channel", channel.name)
             unload_messages()
             load_messages()
             new_message.focus()
-
-        elif page.drawer.controls[index].label == s_translate("Log-out"):
-            if chat_container in page.controls:
-                page.controls.remove(chat_container)
-                page.controls.remove(message_sender)
-                page.dialog = login_dialog
-                page.dialog.open = True
-                page.client_storage.set("stay logged in", False)
-                page.session.set("logged in", False)
+            page.update()
         
+    def logout_user():
+        if chat_container in page.controls:
+            page.controls.remove(chat_container)
+            page.controls.remove(message_sender)
+            page.dialog = login_dialog
+            page.dialog.open = True
+            page.client_storage.set("stay logged in", False)
+            page.session.set("logged in", False)
         page.drawer.open = False
         page.update()
 
-    def drawer_changed(e):
-        shortcut_drawer_changed()
-
-    all_channels = []
     channel_names = ["Global Chat", "Cooking", "Gaming", "Sports", "Studies",
-                     "Music", "Technology", "Fitness", "Fashion", "Programming",]
+                     "Music", "Technology", "Fitness", "Fashion", "Programming"]
     trans_channel_names = [ s_translate(channel_name) for channel_name in channel_names]
-    for channel_name in trans_channel_names:
-        all_channels.append(ft.NavigationDrawerDestination(
-                            label = channel_name,
-                            icon = ft.icons.CHAT_OUTLINED,
-                            selected_icon_content=ft.Icon(ft.icons.CHAT),
-                            ))
-    all_channels.insert(1, ft.Text("   " + s_translate("Topics"), size = 20))
-    logout = ft.NavigationDrawerDestination(
-                icon_content=ft.Icon(ft.icons.PHONE_OUTLINED),
-                label = s_translate("Log-out"),
-                selected_icon=ft.icons.PHONE,
+        
+    logout = ft.TextButton(
+                content = ft.Text(s_translate("Log-out"), size = 20, color = ft.colors.WHITE),
+                on_click = lambda x: logout_user()
             )
-    feedback = ft.NavigationDrawerDestination(
-                label = s_translate("Feedback"),
-                icon = ft.icons.PERSON_3_OUTLINED,
-                selected_icon_content=ft.Icon(ft.icons.PERSON_3)
+    feedback = ft.TextButton(
+                content = ft.Text(s_translate("Give feedback"), size = 20, color = ft.colors.WHITE),
+                on_click = lambda x: change_channel("Feedback")
                 )
-    page.drawer = ft.NavigationDrawer(
-        controls=[],
-        on_change = drawer_changed,
-        surface_tint_color = ft.colors.PURPLE_100,
-        shadow_color = ft.colors.PURPLE_200,
-        )
-    page.drawer.controls.extend(all_channels + [feedback, logout])
+    half_topics1 = [ft.Text("—"*18)]
+    half_topics2 = [ft.Text("—"*18)]
+
+    def create_text_button(text):
+        return ft.TextButton(content = ft.Text(text, size = 30), on_click = lambda x: change_channel(text))
+    
+    for i in range(len(channel_names)):
+        name = trans_channel_names[i]
+        item = [create_text_button(name), ft.Text("—"*18)]
+        if i % 2 == 0:
+            half_topics1.extend(item)
+        else:
+            half_topics2.extend(item)
+
+    def close_all_topics(e):
+        page.dialog = all_topics
+        page.dialog.open = topics.data = False
+        page.update()
+
+    def open_all_topics(e):
+        page.dialog = all_topics
+        page.dialog.open = topics.data = True
+        page.update()
+
+    topics = ft.TextButton( content = ft.Text(s_translate("Topics"),
+                                              size = 20, color = ft.colors.WHITE),
+                                              on_click = open_all_topics,
+                                              data = False)
+                                              
+    all_topics = ft.AlertDialog(modal = False,
+               title = ft.Text(s_translate("Topics"), size = 25),
+               shape = ft.RoundedRectangleBorder( radius = 2 ),
+               on_dismiss = close_all_topics,
+               content = ft.Row(controls = [ft.Column(half_topics1, spacing = 3),
+                                            ft.VerticalDivider(),
+                                            ft.Column(half_topics2, spacing= 3)]),
+               open = True)
+    
+    page.drawer = ft.NavigationDrawer(controls=[],
+                                      surface_tint_color = ft.colors.PURPLE_100,
+                                      shadow_color = ft.colors.PURPLE_200,
+                                      )
+    channel_name = ft.TextButton( content = ft.Text(s_translate("Global Chat"), size = 25, color = ft.colors.WHITE),
+                                  disabled = True)
+    page.drawer.controls.extend([ ft.Divider(), channel_name, ft.Divider(), topics, feedback, logout])
+    
+    page.session.set("channel", s_translate("Global Chat"))
+
     def theme_change(e):
         shortcut_theme_change()
 
@@ -514,7 +539,7 @@ def main(page: ft.Page):
 
         page.dialog = ft.AlertDialog(open = True,
                                      modal = True,
-                                     title = ft.Text(f"{s_translate("Create account")} {' ' * 68}"),
+                                     title = ft.Text(f"{s_translate('Create account')} {' ' * 68}"),
                                      content = ft.Column( [ ft.Row( [ create_username, create_email ],),
                                                             ft.Row( [  create_password, confirm_create_password], ),
                                                             auto_login_checkbox,
@@ -531,10 +556,6 @@ def main(page: ft.Page):
         page.update()
     
     def login_user():
-       label = page.drawer.controls[0].label
-       channel.name = channel_names[trans_channel_names.index(label)]
-       page.appbar.title.value = label
-       page.drawer.selected_index = 0
        unload_messages()
        load_messages()
        login_password.value = None
@@ -566,10 +587,6 @@ def main(page: ft.Page):
             login_password.focus()
 
         else:
-            label = page.drawer.controls[0].label
-            channel.name = channel_names[trans_channel_names.index(label)]
-            page.appbar.title.value = label
-            page.drawer.selected_index = 0
             unload_messages()
             load_messages()
             page.client_storage.set("stay logged in", auto_login_checkbox.value)
@@ -656,7 +673,6 @@ def main(page: ft.Page):
         page.dialog.update()
 
     def onMessage(message: Message):
-        print("messege resivved")
         if message.message_type == "chat_message":
             chat.controls.append(ChatMesage(message))
 
@@ -672,7 +688,6 @@ def main(page: ft.Page):
         page.update()
 
     page.pubsub.subscribe(onMessage)
-    print("subscribed")
 
     appropriate_image_extentions = (".png", ".apng", '.avif', '.gif', '.jpg', '.jpeg', '.jfif', '.pjpeg', '.pjp', '.svg', '.webp')
     
@@ -683,7 +698,6 @@ def main(page: ft.Page):
 
     def cancel_translating(e):
         page.client_storage.set("translating", False)
-        page.client_storage.set("language", None)
         page.window_destroy()
         restart()
     
@@ -979,24 +993,3 @@ def main(page: ft.Page):
             theme_swich,
             upload_image_button,   
         ],
-    )
-
-    if not page.client_storage.get("dark theme"):
-        page.theme_mode = ft.ThemeMode.LIGHT
-        page.appbar.bgcolor = ft.colors.GREY_300
-    else:
-        page.theme_mode = ft.ThemeMode.DARK
-    
-
-
-    if page.client_storage.get("stay logged in"):
-        login_user()
-    else:
-        page.dialog = login_dialog
-        
-    page.dialog.open = True
-    page.window_maximized = True
-    page.update()
-
-ft.app(target=main, view=ft.AppView.WEB_BROWSER)
-#ft.app(target=main, view=ft.AppView.WEB_BROWSER) # To convert to a web app
