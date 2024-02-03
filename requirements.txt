@@ -5,5 +5,7 @@ easygui
 flet
 pyrebase
 pybase64
+requests
+requests
 googletrans
 requests
