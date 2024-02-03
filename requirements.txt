@@ -1,7 +1,2 @@
 requests
-datetime
-easygui
-flet
-pyrebase
-pybase64
-googletrans
+
