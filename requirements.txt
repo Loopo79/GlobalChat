@@ -2,7 +2,7 @@ requests
 gunicorn
 datetime
 easygui
-flet as ft
+flet
 pyrebase
 pybase64
 googletrans
