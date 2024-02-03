@@ -992,4 +992,4 @@ def main(page: ft.Page):
             translate_iconbutton,
             theme_swich,
             upload_image_button,   
-        ],
+        ],)
