@@ -1,5 +1,4 @@
 requests
-tkinter
 gunicorn
 datetime
 easygui
