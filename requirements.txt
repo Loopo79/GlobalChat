@@ -1,9 +1,1 @@
-requests
-tk
-gunicorn
-datetime
-easygui
-flet
-pyrebase
-pybase64
-googletrans
+
